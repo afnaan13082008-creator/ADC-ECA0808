@@ -1,0 +1,107 @@
+clc;
+clear;
+close all;
+
+% EXPERIMENT: AM GENERATION AND DETECTION
+% AIM: To generate an AM signal and recover the
+% original message signal using envelope detection.
+
+% 1. Signal Parameters
+Am = 1;             % Message amplitude
+Ac = 1;             % Carrier amplitude
+fm = 10;            % Message frequency (Hz)
+fc = 1000;           % Carrier frequency (Hz)
+fs = 100000;         % Sampling frequency (Hz)
+m = 0.5;             % Modulation index (50%)
+
+t = 0:1/fs:0.2;
+
+% 2. Generate Baseband and Carrier Signals
+message = Am*cos(2*pi*fm*t);
+carrier = Ac*cos(2*pi*fc*t);
+
+% 3. Generate AM Signal
+am_signal = Ac*(1 + m*cos(2*pi*fm*t)) ...
+            .* cos(2*pi*fc*t);
+
+% 4. Calculate AM Envelope
+upper_envelope = Ac*(1 + m*cos(2*pi*fm*t));
+lower_envelope = -upper_envelope;
+
+% 5. Demodulation Using Envelope Detection
+rectified_signal = abs(am_signal);
+
+N = round(fs/fc);
+filter_kernel = ones(1,N)/N;
+
+detected_signal = conv(rectified_signal, ...
+                       filter_kernel, 'same');
+
+% Remove DC component
+demodulated = detected_signal - mean(detected_signal);
+
+% Normalize the recovered message
+demodulated = demodulated / max(abs(demodulated));
+
+% 6. Plot All Four Signals
+figure('Color','w');
+
+% (a) Baseband Signal
+subplot(4,1,1);
+plot(t,message,'b','LineWidth',1.5);
+grid on;
+xlim([0 0.2]);
+ylim([-1.3 1.3]);
+title('(a) Baseband Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+% (b) Carrier Signal
+subplot(4,1,2);
+plot(t,carrier,'c','LineWidth',1);
+grid on;
+xlim([0 0.02]);
+ylim([-1.3 1.3]);
+title('(b) Carrier Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+% (c) Amplitude Modulated Signal
+subplot(4,1,3);
+plot(t,am_signal,'r','LineWidth',0.8);
+hold on;
+plot(t,upper_envelope,'b--','LineWidth',1.3);
+plot(t,lower_envelope,'b--','LineWidth',1.3);
+grid on;
+xlim([0 0.2]);
+title('(c) Amplitude Modulated Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+legend('AM Signal','Upper Envelope', ...
+       'Lower Envelope');
+
+% (d) Demodulated Output
+subplot(4,1,4);
+plot(t,demodulated,'r','LineWidth',1.5);
+grid on;
+xlim([0 0.2]);
+ylim([-1.3 1.3]);
+title('(d) Demodulated Output');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+% 7. Display Modulation Index
+Vmax = Ac*(1 + m);
+Vmin = Ac*(1 - m);
+MI = (Vmax - Vmin)/(Vmax + Vmin);
+
+fprintf('AM GENERATION AND DETECTION\n');
+fprintf('Maximum Envelope = %.2f V\n',Vmax);
+fprintf('Minimum Envelope = %.2f V\n',Vmin);
+fprintf('Modulation Index = %.2f\n',MI);
+fprintf('Percentage Modulation = %.0f%%\n',MI*100);
+
+% 8. Result
+disp('AM signal generated successfully.');
+disp('Envelope detection completed.');
+disp('Original message signal recovered.');
