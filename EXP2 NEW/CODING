@@ -1,0 +1,111 @@
+clc;
+clear;
+close all;
+
+% AM GENERATION AND DETECTION
+
+% Signal Parameters
+Am = 1;
+fm = 500;
+Ac = 5;
+fc = 5000;
+fs = 20*fc;
+
+% Time vector: 4 message cycles
+t = 0:1/fs:4/fm;
+
+% Message and Carrier Signals
+m = Am*sin(2*pi*fm*t);
+c = Ac*sin(2*pi*fc*t);
+
+% Modulation Index
+mu = Am/Ac;
+
+% AM Signal Generation
+am = Ac*(1 + mu*sin(2*pi*fm*t)) ...
+     .* sin(2*pi*fc*t);
+
+% AM Demodulation using Hilbert Envelope
+dem = abs(hilbert(am));
+
+% Remove DC component
+dem = dem - mean(dem);
+
+% Normalize recovered signal
+dem = dem/max(abs(dem));
+
+% Frequency Spectrum
+N = length(am);
+f = (-floor(N/2):ceil(N/2)-1)*(fs/N);
+AM_FFT = abs(fftshift(fft(am)))/N;
+
+% Sideband Frequencies
+USB = fc + fm;
+LSB = fc - fm;
+
+% Power Calculation (1-ohm load)
+Pc = Ac^2/2;
+Psb = mu^2*Pc/4;
+
+% Display Results
+fprintf('Modulation Index = %.2f\n',mu);
+fprintf('Percentage Modulation = %.0f%%\n',mu*100);
+fprintf('USB Frequency = %.0f Hz\n',USB);
+fprintf('LSB Frequency = %.0f Hz\n',LSB);
+fprintf('Carrier Power = %.2f W\n',Pc);
+fprintf('Each Sideband Power = %.3f W\n',Psb);
+
+% Plot Results
+figure('Name','AM Modulation and Detection', ...
+       'NumberTitle','off','Color','w');
+
+subplot(3,2,1);
+plot(t,m,'b','LineWidth',1.2);
+title('Message Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+grid on;
+
+subplot(3,2,2);
+plot(t,c,'r','LineWidth',1);
+title('Carrier Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+grid on;
+
+subplot(3,2,3);
+plot(t,am,'b');
+hold on;
+plot(t,Ac*(1+mu*sin(2*pi*fm*t)),'r--');
+plot(t,-Ac*(1+mu*sin(2*pi*fm*t)),'r--');
+title('AM Signal and Envelope');
+xlabel('Time (s)');
+ylabel('Amplitude');
+grid on;
+
+subplot(3,2,4);
+plot(t,dem,'r','LineWidth',1.2);
+hold on;
+plot(t,m/Am,'b--');
+title('Demodulated Signal');
+xlabel('Time (s)');
+ylabel('Normalized Amplitude');
+legend('Recovered','Original Message');
+grid on;
+
+subplot(3,2,5);
+plot(f,AM_FFT,'b');
+xlim([fc-3*fm fc+3*fm]);
+title('AM Frequency Spectrum');
+xlabel('Frequency (Hz)');
+ylabel('Magnitude');
+grid on;
+
+subplot(3,2,6);
+bar([Pc Psb Psb]);
+set(gca,'XTickLabel',{'Carrier','USB','LSB'});
+title('Carrier and Sideband Power');
+ylabel('Power (W)');
+grid on;
+
+sgtitle('AM Generation and Detection');
